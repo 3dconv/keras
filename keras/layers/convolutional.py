@@ -58,5 +58,41 @@ class MaxPooling2D(Layer):
         return output
 
 
+class Convolution3D(Layer):
+
+    def __init__(self, nb_filter, stack_size, nb_row, nb_col, nb_depth,
+        init='uniform', activation='linear', weights=None,
+        image_shape=None, border_mode='valid'):
+
+        self.init = initializations.get(init)
+        self.activation = activations.get(activation)
+        self.border_mode = border_mode
+        self.image_shape = image_shape
+
+        dtensor5 = T.TensorType('float32', (0,)*5)
+        self.input = dtensor5()
+        self.W_shape = (nb_filter, nb_depth, stack_size, nb_row, nb_col)
+        self.W = self.init(self.W_shape)
+        self.b = shared_zeros((nb_filter,))
+
+        self.params = [self.W, self.b]
+
+        if weights is not None:
+            self.set_weights(weights)
+
+    def output(self, train):
+        X = self.get_input(train)
+
+        conv_out = conv3d(
+            signals=X,
+            filters=self.W,
+            signals_shape=self.image_shape,
+            filters_shape=self.W_shape,
+            border_mode=self.border_mode)
+
+        output = self.activation(conv_out + self.b.dimshuffle('x', 'x',  0, 'x', 'x'))
+        return output
+
+
 # class ZeroPadding2D(Layer): TODO
         
